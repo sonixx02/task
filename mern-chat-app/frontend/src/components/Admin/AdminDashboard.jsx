@@ -7,7 +7,7 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '', mobileNo: '', password: '' });
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
-
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   useEffect(() => {
     
     const token = localStorage.getItem('token');
@@ -15,7 +15,7 @@ const AdminDashboard = () => {
       navigate('/'); 
     } else {
       
-      axios.get('http://localhost:5000/api/auth/validate', {
+      axios.get(`${backendUrl}/api/auth/validate`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -34,7 +34,7 @@ const AdminDashboard = () => {
 
   const validateToken = async (token) => {
     try {
-      await axios.get('http://localhost:5000/api/auth/validate', {
+      await axios.get(`${backendUrl}/api/auth/validate`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
       const decodedToken = JSON.parse(atob(token.split('.')[1]));  // Decode JWT
       const loggedInUserId = decodedToken.id;
 
-      const response = await axios.get('http://localhost:5000/api/admin/users', {
+      const response = await axios.get(`${backendUrl}/api/admin/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.put(
-        `http://localhost:5000/api/admin/users/block/${userId}`,
+        `${backendUrl}/api/admin/users/block/${userId}`,
         {},
         {
           headers: {
@@ -95,7 +95,7 @@ const AdminDashboard = () => {
   const handleAddUser = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/admin/addUser', newUser, {
+      await axios.post(`${backendUrl}/api/admin/addUser`, newUser, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+      await axios.delete(`${backendUrl}/api/admin/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -129,7 +129,7 @@ const AdminDashboard = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/admin/users/import', formData, {
+      await axios.post(`${backendUrl}/api/admin/users/import`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
@@ -145,7 +145,7 @@ const AdminDashboard = () => {
   const handleExport = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/admin/export', {
+      const response = await axios.get(`${backendUrl}/api/admin/export`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

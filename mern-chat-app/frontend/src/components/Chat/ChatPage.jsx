@@ -12,7 +12,7 @@ const ChatPage = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [receiverUser, setReceiverUser] = useState(null);
   const messagesEndRef = useRef(null);
-
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   // Get token from localStorage (adjust based on your auth storage)
   const token = localStorage.getItem('token');
 
@@ -26,7 +26,7 @@ const ChatPage = () => {
     // Fetch current user details
     const fetchUserDetails = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/auth/profile', {
+        const response = await axios.get(`${backendUrl}/api/auth/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setCurrentUser(response.data);
@@ -38,7 +38,7 @@ const ChatPage = () => {
     // Fetch receiver user details
     const fetchReceiverDetails = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/auth/user/${receiverId}`, {
+        const response = await axios.get(`${backendUrl}/api/auth/user/${receiverId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setReceiverUser(response.data);
@@ -50,7 +50,7 @@ const ChatPage = () => {
     // Fetch message history
     const fetchMessages = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/chat/messages/${receiverId}`, {
+        const response = await axios.get(`${backendUrl}/api/chat/messages/${receiverId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         setMessages(response.data);
@@ -60,7 +60,7 @@ const ChatPage = () => {
     };
 
     // Socket setup
-    const socketInstance = io('http://localhost:5000', {
+    const socketInstance = io(`${backendUrl}`, {
       extraHeaders: {
         Authorization: `Bearer ${token}`
       }
@@ -109,7 +109,7 @@ const ChatPage = () => {
     try {
       // Send message to backend
       const response = await axios.post(
-        `http://localhost:5000/api/chat/send-message/${receiverId}`, 
+        `${backendUrl}/api/chat/send-message/${receiverId}`, 
         formData, 
         {
           headers: { 
@@ -198,7 +198,7 @@ const ChatPage = () => {
               {msg.filePath && (
                 <div className="mt-2">
                   <a 
-                    href={`http://localhost:5000/${msg.filePath}`} 
+                    href={`${backendUrl}/${msg.filePath}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-blue-200 underline"

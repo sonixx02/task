@@ -5,7 +5,7 @@ import axios from 'axios';
 const Signup = () => {
   const [formData, setFormData] = useState({ name: '', email: '', mobileNo: '', password: '' });
   const navigate = useNavigate();
-
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -13,7 +13,7 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/auth/signup', formData);
+      await axios.post(`${backendUrl}/api/auth/signup`, formData);
       navigate('/login'); // Redirect to login page after successful signup
     } catch (error) {
       alert('Signup failed');

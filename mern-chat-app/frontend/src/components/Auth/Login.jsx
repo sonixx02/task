@@ -5,7 +5,7 @@ import axios from 'axios';
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
-
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const response = await axios.post(`${backendUrl}/api/auth/login`, formData);
       localStorage.setItem('token', response.data.token); // Store token in localStorage
       navigate('/admin'); // Redirect to Admin Dashboard on successful login
     } catch (error) {
