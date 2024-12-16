@@ -1,7 +1,7 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+// tailwind.config.js (updated)
+module.exports = {
   darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],  // Include your content paths
+  content: [],
   theme: {
     extend: {
       borderRadius: {
@@ -12,8 +12,5 @@ export default {
       colors: {},
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    // add any other plugins here
-  ],
-}
+  plugins: [require("tailwindcss-animate")],
+};
