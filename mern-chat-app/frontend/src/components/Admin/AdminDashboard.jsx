@@ -7,14 +7,14 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '', mobileNo: '', password: '' });
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
-  const backendUrl = import.meta.env.VITE_BACKEND_URL ;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   useEffect(() => {
     
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/'); 
     } else {
-      
+      console.log(backendUrl);
       axios.get(`${backendUrl}/api/auth/validate`, {
         headers: {
           Authorization: `Bearer ${token}`,

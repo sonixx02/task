@@ -5,7 +5,8 @@ const dotenv = require('dotenv');
 const http = require('http');
 const socketIO = require('socket.io');
 
-dotenv.config(); // Load environment variables from .env file
+// Load environment variables from .env file
+dotenv.config();
 
 // Initialize express app and create server
 const app = express();
@@ -14,22 +15,23 @@ const server = http.createServer(app);
 // Initialize socket.io
 const io = socketIO(server, {
   cors: {
-    origin: process.env.FRONTEND_URL, // Frontend URL (from .env)
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type", "Authorization"], // Allow the Authorization header
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',  // Use frontend URL from .env
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
 });
 
 // Middleware to enable CORS and parse JSON
 app.use(cors({
-  origin: process.env.FRONTEND_URL,  // Set frontend URL to allow only requests from there
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',  // Use frontend URL from .env
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));  // Static file serving for uploads
 
-const onlineUsers = new Map(); // Store online users in a Map
+// Store online users in a Map
+const onlineUsers = new Map(); 
 
 // Socket.IO connection event
 io.on('connection', (socket) => {
