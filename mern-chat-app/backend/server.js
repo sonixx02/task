@@ -15,7 +15,7 @@ const server = http.createServer(app);
 // Initialize socket.io
 const io = socketIO(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',  // Use frontend URL from .env
+    origin: process.env.FRONTEND_URL ,  // Use frontend URL from .env
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   },
@@ -23,7 +23,7 @@ const io = socketIO(server, {
 
 // Middleware to enable CORS and parse JSON
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',  // Use frontend URL from .env
+  origin: process.env.FRONTEND_URL ,  // Use frontend URL from .env
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
