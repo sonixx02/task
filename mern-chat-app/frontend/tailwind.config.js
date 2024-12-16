@@ -1,7 +1,12 @@
-// tailwind.config.js (ESM version)
-export default {
+import { defineConfig } from 'tailwind-config';
+import tailwindcssAnimate from 'tailwindcss-animate';
+
+export default defineConfig({
   darkMode: ["class"],
-  content: [],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}"
+  ],
   theme: {
     extend: {
       borderRadius: {
@@ -12,5 +17,5 @@ export default {
       colors: {},
     },
   },
-  plugins: [require("tailwindcss-animate")],
-};
+  plugins: [tailwindcssAnimate]
+});
