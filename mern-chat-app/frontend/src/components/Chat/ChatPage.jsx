@@ -12,7 +12,7 @@ const ChatPage = () => {
   const [currentUser, setCurrentUser] = useState(null);
   const [receiverUser, setReceiverUser] = useState(null);
   const messagesEndRef = useRef(null);
-  const backendUrl = 'https://task-eta-ecru.vercel.app' ;
+  const backendUrl = 'https://task-czvp.onrender.com' ;
   // Get token from localStorage (adjust based on your auth storage)
   const token = localStorage.getItem('token');
 

@@ -5,7 +5,7 @@ import axios from 'axios';
 const Signup = () => {
   const [formData, setFormData] = useState({ name: '', email: '', mobileNo: '', password: '' });
   const navigate = useNavigate();
-  const backendUrl = 'https://task-eta-ecru.vercel.app' ;
+  const backendUrl = 'https://task-czvp.onrender.com' ;
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
