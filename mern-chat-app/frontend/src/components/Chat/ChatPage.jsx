@@ -11,55 +11,16 @@ const ChatPage = () => {
   const [socket, setSocket] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [receiverUser, setReceiverUser] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
-  const backendUrl = 'https://task-czvp.onrender.com' ;
-  // Get token from localStorage (adjust based on your auth storage)
+  const backendUrl = 'https://task-czvp.onrender.com';
   const token = localStorage.getItem('token');
 
-  // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Fetch user details and messages
   useEffect(() => {
-    // Fetch current user details
-    const fetchUserDetails = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/auth/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setCurrentUser(response.data);
-      } catch (error) {
-        console.error('Failed to fetch current user', error);
-      }
-    };
-
-    // Fetch receiver user details
-    const fetchReceiverDetails = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/auth/user/${receiverId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setReceiverUser(response.data);
-      } catch (error) {
-        console.error('Failed to fetch receiver user', error);
-      }
-    };
-
-    // Fetch message history
-    const fetchMessages = async () => {
-      try {
-        const response = await axios.get(`${backendUrl}/api/chat/messages/${receiverId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        setMessages(response.data);
-      } catch (error) {
-        console.error('Failed to fetch messages', error);
-      }
-    };
-
-    // Socket setup
     const socketInstance = io(`${backendUrl}`, {
       extraHeaders: {
         Authorization: `Bearer ${token}`
@@ -68,38 +29,68 @@ const ChatPage = () => {
 
     setSocket(socketInstance);
 
-    // Register user and listen for messages
-    socketInstance.emit('register', currentUser?.id);
     socketInstance.on('receive_message', (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+      setMessages(prevMessages => {
+        // Check if message already exists to prevent duplicates
+        const messageExists = prevMessages.some(msg => msg._id === message._id);
+        if (!messageExists) {
+          return [...prevMessages, message];
+        }
+        return prevMessages;
+      });
     });
 
-    // Fetch data
-    fetchUserDetails();
-    fetchReceiverDetails();
-    fetchMessages();
+    // Fetch initial data
+    const fetchInitialData = async () => {
+      try {
+        const [currentUserRes, receiverUserRes, messagesRes] = await Promise.all([
+          axios.get(`${backendUrl}/api/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          axios.get(`${backendUrl}/api/auth/user/${receiverId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          axios.get(`${backendUrl}/api/chat/messages/${receiverId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
 
-    // Cleanup
+        setCurrentUser(currentUserRes.data);
+        setReceiverUser(receiverUserRes.data);
+        setMessages(messagesRes.data);
+        
+        // Register user after getting current user data
+        socketInstance.emit('register', currentUserRes.data.id);
+      } catch (error) {
+        console.error('Failed to fetch initial data', error);
+      }
+    };
+
+    fetchInitialData();
+
     return () => {
       socketInstance.disconnect();
     };
   }, [receiverId, token]);
 
-  // Scroll to bottom when messages update
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Handle file selection
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selectedFile = e.target.files[0];
+    if (selectedFile && selectedFile.size <= 5 * 1024 * 1024) { // 5MB limit
+      setFile(selectedFile);
+    } else {
+      alert('File size should be less than 5MB');
+      e.target.value = null;
+    }
   };
 
-  // Send message with optional file
   const sendMessage = async () => {
-    // Prevent sending empty message and no file
-    if (!newMessage.trim() && !file) return;
+    if ((!newMessage.trim() && !file) || isUploading) return;
 
+    setIsUploading(true);
     const formData = new FormData();
     formData.append('content', newMessage);
     if (file) {
@@ -107,7 +98,6 @@ const ChatPage = () => {
     }
 
     try {
-      // Send message to backend
       const response = await axios.post(
         `${backendUrl}/api/chat/send-message/${receiverId}`, 
         formData, 
@@ -119,43 +109,26 @@ const ChatPage = () => {
         }
       );
 
+      // Immediately update local state with the new message
+      const newMsg = response.data.data;
+      setMessages(prevMessages => [...prevMessages, newMsg]);
+
       // Clear input and file
       setNewMessage('');
       setFile(null);
-      document.getElementById('fileInput').value = null;
+      if (document.getElementById('fileInput')) {
+        document.getElementById('fileInput').value = null;
+      }
     } catch (error) {
       console.error('Failed to send message', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  // Handle message input submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    sendMessage();
-  };
-
-  // Render file preview
-  const renderFilePreview = () => {
-    if (!file) return null;
-
-    const fileType = file.type.split('/')[0];
-    switch (fileType) {
-      case 'image':
-        return (
-          <img 
-            src={URL.createObjectURL(file)} 
-            alt="Preview" 
-            className="max-w-32 max-h-32 object-cover rounded"
-          />
-        );
-      default:
-        return (
-          <div className="bg-gray-100 p-2 rounded">
-            {file.name} ({Math.round(file.size / 1024)} KB)
-          </div>
-        );
-    }
-  };
+  // Rest of your component remains the same...
+  // (Keep your existing render methods and JSX)
 
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto">
@@ -184,31 +157,35 @@ const ChatPage = () => {
                   : 'bg-gray-200'
               }`}
             >
-              {/* Sender name only for messages from other users */}
               {msg.sender._id !== currentUser?.id && (
                 <div className="font-semibold text-sm mb-1">
                   {msg.sender.name}
                 </div>
               )}
               
-              {/* Message content */}
               <div>{msg.content}</div>
               
-              {/* File preview if exists */}
               {msg.filePath && (
                 <div className="mt-2">
-                  <a 
-                    href={`${backendUrl}/${msg.filePath}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-200 underline"
-                  >
-                    View Attachment
-                  </a>
+                  {msg.filePath.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                    <img 
+                      src={`${backendUrl}/${msg.filePath}`} 
+                      alt="Attachment" 
+                      className="max-w-full rounded"
+                    />
+                  ) : (
+                    <a 
+                      href={`${backendUrl}/${msg.filePath}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-200 underline"
+                    >
+                      Download Attachment
+                    </a>
+                  )}
                 </div>
               )}
               
-              {/* Timestamp */}
               <div className="text-xs mt-1 opacity-70">
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </div>
@@ -221,7 +198,17 @@ const ChatPage = () => {
       {/* File Preview */}
       {file && (
         <div className="p-2 bg-gray-50 flex items-center space-x-2">
-          {renderFilePreview()}
+          {file.type.startsWith('image/') ? (
+            <img 
+              src={URL.createObjectURL(file)} 
+              alt="Preview" 
+              className="max-w-32 max-h-32 object-cover rounded"
+            />
+          ) : (
+            <div className="bg-gray-100 p-2 rounded">
+              {file.name} ({Math.round(file.size / 1024)} KB)
+            </div>
+          )}
           <button 
             onClick={() => {
               setFile(null);
@@ -235,7 +222,13 @@ const ChatPage = () => {
       )}
 
       {/* Message Input Form */}
-      <form onSubmit={handleSubmit} className="bg-white p-4 border-t flex items-center space-x-2">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage();
+        }} 
+        className="bg-white p-4 border-t flex items-center space-x-2"
+      >
         <input
           type="file"
           id="fileInput"
@@ -247,6 +240,7 @@ const ChatPage = () => {
           type="button"
           onClick={() => document.getElementById('fileInput').click()}
           className="bg-gray-200 p-2 rounded-full"
+          disabled={isUploading}
         >
           📎
         </button>
@@ -256,12 +250,16 @@ const ChatPage = () => {
           onChange={(e) => setNewMessage(e.target.value)}
           className="flex-grow border p-2 rounded"
           placeholder="Type your message..."
+          disabled={isUploading}
         />
         <button
           type="submit"
-          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+          className={`bg-blue-500 text-white p-2 rounded ${
+            isUploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'
+          }`}
+          disabled={isUploading}
         >
-          Send
+          {isUploading ? 'Sending...' : 'Send'}
         </button>
       </form>
     </div>

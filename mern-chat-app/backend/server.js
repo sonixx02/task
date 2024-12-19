@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const socketIO = require('socket.io');
+const jwt = require('jsonwebtoken');
 
 // Load environment variables from .env file
 dotenv.config();
@@ -12,67 +13,69 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Initialize socket.io
+// Initialize socket.io with authentication middleware
 const io = socketIO(server, {
   cors: {
-    origin: process.env.FRONTEND_URL ,  // Use frontend URL from .env
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
   },
+});
+
+// Socket authentication middleware
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return next(new Error('Authentication error'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    socket.userId = decoded.id;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
 });
 
 // Middleware to enable CORS and parse JSON
 app.use(cors({
-  origin: process.env.FRONTEND_URL ,  // Use frontend URL from .env
+  origin: process.env.FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));  // Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
 
 // Store online users in a Map
-const onlineUsers = new Map(); 
+const onlineUsers = new Map();
 
-// Socket.IO connection event
+// Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('New socket connection:', socket.id);
+  console.log('New socket connection:', socket.id, 'User:', socket.userId);
 
-  // Register user with socket
-  socket.on('register', (userId) => {
-    onlineUsers.set(userId, socket.id);
-    console.log(`User ${userId} registered with socket ID: ${socket.id}`);
-    
-    io.emit('user_online', userId); // Notify others when user is online
-  });
-
-  // Handle sending messages
-  socket.on('send_message', (messageData) => {
-    const { sender, receiver, content, filePath } = messageData;
-    const receiverSocketId = onlineUsers.get(receiver);
-
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('receive_message', {
-        sender,
-        receiver,
-        content,
-        filePath,
-        timestamp: new Date(),
-      });
-    }
-  });
+  // Join user to their own room
+  if (socket.userId) {
+    socket.join(socket.userId);
+    onlineUsers.set(socket.userId, socket.id);
+    io.emit('user_online', socket.userId);
+  }
 
   // Handle user disconnect
   socket.on('disconnect', () => {
-    for (const [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        onlineUsers.delete(userId);
-        io.emit('user_offline', userId); // Notify others when user is offline
-        break;
-      }
+    if (socket.userId) {
+      socket.leave(socket.userId);
+      onlineUsers.delete(socket.userId);
+      io.emit('user_offline', socket.userId);
     }
     console.log('Socket disconnected:', socket.id);
   });
 });
+
+// Make io accessible to routes
+app.set('socketio', io);
+app.set('onlineUsers', onlineUsers);
 
 // MongoDB Connection
 mongoose
@@ -87,6 +90,12 @@ mongoose
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;

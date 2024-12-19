@@ -7,7 +7,7 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '', mobileNo: '', password: '' });
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
-  const backendUrl = 'https://task-czvp.onrender.com' ;
+  const backendUrl = 'https://task-czvp.onrender.com';
   useEffect(() => {
     
     const token = localStorage.getItem('token');
