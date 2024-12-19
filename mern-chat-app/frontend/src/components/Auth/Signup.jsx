@@ -14,7 +14,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       await axios.post(`${backendUrl}/api/auth/signup`, formData);
-      navigate('/login'); // Redirect to login page after successful signup
+      navigate('/');
     } catch (error) {
       alert('Signup failed');
     }
